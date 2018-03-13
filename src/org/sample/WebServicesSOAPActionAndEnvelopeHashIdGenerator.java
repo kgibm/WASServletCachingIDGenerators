@@ -1,4 +1,5 @@
 /**
+ * Based on https://wasdynacache.blogspot.com/2010/02/caching-webservices-responses-in.html
  * This sample is provided for use in customer applications to cache webservices responses
  * in WebSphere Application Server
  */
