@@ -4,7 +4,9 @@
 
 ### org.sample.WebServicesSOAPActionAndEnvelopeHashIdGenerator
 
-As of March 2018, WAS traditional servlet caching does not support JAX-WS. This is an example custom ID generator that allows JAX-WS to work with servlet caching.
+As of March 2018, WAS traditional servlet caching does not support JAX-WS.
+This is an example custom ID generator that allows JAX-WS to work with servlet caching.
+This code requires Java 8 (due to the use of `java.util.Base64`.
 For POST SOAP requests, it generates a cache ID of SOAPAction=${SOAPAction}:SOAPEnvelope=${Base64(SHA-256(SOAPEnvelope))}
 
 Example WAR file WebContent/WEB-INF/cachespec.xml:
