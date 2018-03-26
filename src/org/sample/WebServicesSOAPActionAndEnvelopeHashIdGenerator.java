@@ -31,17 +31,18 @@ public class WebServicesSOAPActionAndEnvelopeHashIdGenerator implements IdGenera
 	private static final Logger LOG = Logger.getLogger(CLASS);
 
 	private static final String ACTION = "action=";
-	private static final MessageDigest hasher;
+	private static final ThreadLocal<MessageDigest> hasher = new ThreadLocal<MessageDigest>() {
+		@Override
+		protected MessageDigest initialValue() {
+			try {
+				return MessageDigest.getInstance("SHA-256");
+			} catch (NoSuchAlgorithmException e) {
+				throw new RuntimeException(e);
+			}
+		}
+	};
 
 	private static final boolean EXPERIMENTAL_SUPPORT_TRANSFER_ENCODING_CHUNKED = true;
-
-	static {
-		try {
-			hasher = MessageDigest.getInstance("SHA-256");
-		} catch (NoSuchAlgorithmException e) {
-			throw new RuntimeException(e);
-		}
-	}
 
 	/**
 	 * Cache policy that governs if a response is cached or not.
@@ -103,7 +104,7 @@ public class WebServicesSOAPActionAndEnvelopeHashIdGenerator implements IdGenera
 					}
 					byte[] reqContent = reqOS.toByteArray();
 
-					byte[] reqHash = hasher.digest(reqContent);
+					byte[] reqHash = hasher.get().digest(reqContent);
 					cacheId = Base64.getEncoder().encodeToString(reqHash);
 
 					if (LOG.isLoggable(Level.FINEST)) {
