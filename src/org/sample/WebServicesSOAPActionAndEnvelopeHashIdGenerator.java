@@ -42,7 +42,7 @@ public class WebServicesSOAPActionAndEnvelopeHashIdGenerator implements IdGenera
 		}
 	};
 
-	private static final boolean EXPERIMENTAL_SUPPORT_TRANSFER_ENCODING_CHUNKED = true;
+	private static final boolean EXPERIMENTAL_SUPPORT_TRANSFER_ENCODING_CHUNKED = false;
 
 	/**
 	 * Cache policy that governs if a response is cached or not.
@@ -54,7 +54,6 @@ public class WebServicesSOAPActionAndEnvelopeHashIdGenerator implements IdGenera
 	 * id does not exist in the cache (CACHE MISS) or simply returning the cached
 	 * response for that id from the cache.
 	 */
-	@SuppressWarnings("unchecked")
 	@Override
 	public String getId(ServletCacheRequest request) {
 
@@ -71,26 +70,7 @@ public class WebServicesSOAPActionAndEnvelopeHashIdGenerator implements IdGenera
 			if (soapAction != null) {
 				try {
 					if (EXPERIMENTAL_SUPPORT_TRANSFER_ENCODING_CHUNKED) {
-						try {
-							ServletRequest req = ((ServletRequestWrapper) request).getRequest();
-							InputStream in = req.getInputStream();
-							if (req.getContentLength() < 0) {
-								@SuppressWarnings("rawtypes")
-								HashMap inStreamInfo = (HashMap) req.getClass().getMethod("getInputStreamData")
-										.invoke(req);
-								int len = in.available();
-								if (len < 0) {
-									Class<?> dinClass = Class.forName("DetachableInputStream");
-									Object din = dinClass.getConstructor(InputStream.class).newInstance(in);
-									din.getClass().getMethod("detach").invoke(din);
-									len = (int) din.getClass().getMethod("available").invoke(din);
-								}
-								inStreamInfo.put("ContentDataLength", new Long(len));
-								req.getClass().getMethod("setInputStreamData", HashMap.class).invoke(req, inStreamInfo);
-							}
-						} catch (Throwable t) {
-							throw new RuntimeException(t);
-						}
+						enableChunkedTransferEncoding(request);
 					}
 
 					request.setGeneratingId(true); // ** DO NOT REMOVE... THIS IS NEEDED FOR PROPER PARSING OF RESPONSE
@@ -126,6 +106,30 @@ public class WebServicesSOAPActionAndEnvelopeHashIdGenerator implements IdGenera
 		}
 
 		return cacheId;
+	}
+
+	@SuppressWarnings("unchecked")
+	private void enableChunkedTransferEncoding(ServletCacheRequest request) {
+		try {
+			ServletRequest req = ((ServletRequestWrapper) request).getRequest();
+			InputStream in = req.getInputStream();
+			if (req.getContentLength() < 0) {
+				@SuppressWarnings("rawtypes")
+				HashMap inStreamInfo = (HashMap) req.getClass().getMethod("getInputStreamData")
+						.invoke(req);
+				int len = in.available();
+				if (len < 0) {
+					Class<?> dinClass = Class.forName("DetachableInputStream");
+					Object din = dinClass.getConstructor(InputStream.class).newInstance(in);
+					din.getClass().getMethod("detach").invoke(din);
+					len = (int) din.getClass().getMethod("available").invoke(din);
+				}
+				inStreamInfo.put("ContentDataLength", new Long(len));
+				req.getClass().getMethod("setInputStreamData", HashMap.class).invoke(req, inStreamInfo);
+			}
+		} catch (Throwable t) {
+			throw new RuntimeException(t);
+		}
 	}
 
 	private String getSoapAction(ServletCacheRequest request) {
